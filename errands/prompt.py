@@ -1,4 +1,5 @@
 import llm
+import json
 from model import Model, Store, Item
 
 
@@ -28,11 +29,9 @@ def get_prompt(model: Model) -> str:
     "I'll also tell you which stores are preferred.\n"
     "Let me know what items I should buy in the next 2 weeks and from what stores.\n"
     "It's important to only output in the following format:\n"
-    "<store1>\n"
-    "- <item1>\n"
-    "- <item2>\n"
-    "<store2>\n"
-    "- <item3>\n"
+    "<store1> - <item1>\n"
+    "<store1> - <item2>\n"
+    "<store2> - <item3>\n"
     "Below are the shopping list items:\n"
     f"{all_items(model)}\n"
     "And my preferred stores are:\n"
@@ -40,6 +39,10 @@ def get_prompt(model: Model) -> str:
   )
 
 # Setting API KEY in `$LLM_GEMINI_KEY` or `llm keys set gemini`
-response = llm.get_model("gemini-2.0-flash").prompt(get_prompt(Model()))
+response = llm.get_model("gemini-2.0-flash").prompt(
+    get_prompt(Model()),
+    schema=llm.schema_dsl("store str, item str", multi=True)
+    )
+items = json.loads(response.text())["items"]
 
-print(response.text())
+print(items)
