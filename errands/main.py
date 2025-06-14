@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from model import Model
-import ast
+from typing import List
 import re
 import readline
 import shlex
@@ -14,6 +14,10 @@ def parse_bool(val: str) -> bool:
   if val.lower() in ("false", "no", "0"):
     return False
   raise ValueError(f"Invalid boolean: {val}")
+
+
+def parse_list(val: str) -> List:
+  return [item.strip() for item in val.split(",")]
 
 
 def check_condition(condition, message):
@@ -29,9 +33,11 @@ def print_help():
   print("  add item <name> <[stores]> <interval_weeks>")
   print("  delete item <name>")
   print("  edit item <name> <[stores]> <interval_weeks>")
-  print("  edit item            # Interactive edit mode")
-  print("  list stores          # List all stores")
-  print("  list items           # List all items")
+  print("  edit item")
+  print("  list stores")
+  print("  list items")
+  print("  log_purcahse <item1> <item2>")
+  print("  next_run")
   print("  help")
   print("  exit")
 
@@ -50,48 +56,59 @@ def execute_command(model: Model, line: str):
     raise EOFError()
 
   elif cmd == "add":
+    check_condition(len(args) >= 2, "Usage: add [store|item]")
     if args[1] == "store":
-      check_condition(len(args) == 3, "Missing store name")
+      check_condition(len(args) >= 3, "Usage: add store <name> (<optional>)")
       name = args[2]
       preferred = parse_bool(args[3]) if len(args) > 3 else False
       model.add_store(name, preferred)
     elif args[1] == "item":
-      check_condition(len(args) == 3, "Missing item name")
+      check_condition(
+        len(args) == 5, "Usage: add item <name> <store1,store2,...> <interval>"
+      )
       name = args[2]
       stores = parse_list(args[3])
       interval = int(args[4])
       model.add_item(name, stores, interval)
     else:
-      raise ValueError("Unknown add command")
+      raise ValueError("Usage: add [store|item]")
 
   elif cmd == "delete":
+    check_condition(len(args) >= 2, "Usage: delete [store|item]")
     if args[1] == "store":
-      check_condition(len(args) == 3, "Missing store name")
+      check_condition(len(args) == 3, "Usage: delete store <name>")
       model.delete_store(args[2])
     elif args[1] == "item":
-      check_condition(len(args) == 3, "Missing item name")
+      check_condition(len(args) == 3, "Usage: delete item <name>")
       model.delete_item(args[2])
     else:
-      raise ValueError("Unknown delete command")
+      raise ValueError("Usage: delete [store|item]")
 
   elif cmd == "edit":
+    check_condition(len(args) >= 2, "Usage: edit [store|item]")
     if args[1] == "store":
-      check_condition(len(args) == 4, "Missing store name or preferred")
+      check_condition(
+        len(args) == 4,
+        "Usage: edit store <name> [true|false] (whether store is preferred)",
+      )
       name = args[2]
       preferred = parse_bool(args[3])
       model.edit_store(name, preferred)
     elif args[1] == "item":
-      check_condition(len(args) >= 3, "Missing item name")
+      check_condition(
+        len(args) >= 3,
+        "Usage: edit item <name> or edit item <name> <store1,store2,...> <interval>",
+      )
       name = args[2]
       if len(args) == 5:
         stores = parse_list(args[3])
-        model.update_item_store(name, stores)
+        model.update_item_stores(name, stores)
         interval = int(args[4])
-        model.edit_item_interval(name, interval)
+        model.update_item_interval(name, interval)
       else:
         run_item_edit_prompt(model, name)
     else:
-      raise ValueError("Unknown edit command")
+      raise ValueError("Usage: edit [store|item]")
 
   elif cmd == "list":
     check_condition(len(args) == 2, "Usage: list stores|items")
@@ -105,9 +122,15 @@ def execute_command(model: Model, line: str):
       if not model.items:
         print("No items.")
       for i in model.items:
-        print(f"- {i.name}: every {i.interval_weeks} weeks at {i.stores}")
+        print(
+          f"- {i.name}: every {i.interval_weeks} weeks at {i.stores}, last purchased on {i.purchased[-1] if i.purchased else None}"
+        )
     else:
       raise ValueError("Usage: list stores|items")
+
+  elif cmd == "log_purchase":
+    check_condition(len(args) == 2, "Usage: log_purchase <item1,item2,...>")
+    model.log_purchase(parse_list(args[1]))
 
   else:
     raise ValueError("Unknown command")
@@ -118,7 +141,6 @@ def run_item_edit_prompt(model: Model, name: str):
   if item == None:
     raise ValueError(f"Item {name} does't exist.")
   print(f"Editing item '{name}'. Type 'done' to finish.")
-  store_names = {store.name for store in model.stores}
 
   while True:
     try:
@@ -134,7 +156,7 @@ def run_item_edit_prompt(model: Model, name: str):
     match = re.match(r"^(stores|interval_weeks)\s*(\+?=?\-?=)\s*(.+)$", user_input)
     if not match:
       print(
-        "Unrecognized user_input. Use 'stores += [...]', 'stores -= [...]', 'stores = [...]', 'interval_weeks = <int>', or 'done'."
+        "Unrecognized user_input. Use 'stores [+/-]= <store1,store2,...>', 'interval_weeks = <int>', or 'done'."
       )
       continue
 
@@ -145,21 +167,7 @@ def run_item_edit_prompt(model: Model, name: str):
 
     try:
       if field == "stores":
-        # Try to evaluate the value as a literal (list or string)
-        parsed = ast.literal_eval(value)
-        if isinstance(parsed, str):
-          new_stores = [parsed]
-        elif isinstance(parsed, list):
-          new_stores = parsed
-        else:
-          raise ValueError("stores must be a string or list of strings")
-
-        # Validate stores exist
-        unknown = [s for s in new_stores if s not in store_names]
-        if unknown:
-          print(f"Unknown store(s): {', '.join(unknown)}")
-          continue
-
+        new_stores = parse_list(value)
         if operator == "+=":
           model.add_item_stores(name, new_stores)
         elif operator == "-=":

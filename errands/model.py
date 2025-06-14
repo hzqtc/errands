@@ -69,18 +69,19 @@ class Model:
     with open(DATA_FILE, "w") as fp:
       tomlkit.dump(doc, fp)
 
+  def store_exists(self, name: str) -> bool:
+    return any(s.name == name for s in self.stores)
+
   @autosave
   def add_store(self, name: str, preferred: bool = False):
     if any(s.name == name for s in self.stores):
       raise ValueError(f"Store '{name}' already exists.")
-      return
     self.stores.append(Store(name=name, preferred=preferred))
 
   @autosave
   def delete_store(self, name: str):
-    if none(s.name == name for s in self.stores):
+    if not any(s.name == name for s in self.stores):
       raise ValueError(f"Store '{name}' does't exist.")
-      return
     self.stores = [s for s in self.stores if s.name != name]
 
   @autosave
@@ -95,21 +96,28 @@ class Model:
   def add_item(self, name: str, store_list: List[str], interval: int):
     if any(i.name == name for i in self.items):
       raise ValueError(f"Item '{name}' already exists.")
-      return
+    for store in store_list:
+      if not self.store_exists(store):
+        raise ValueError(f"Store '{store}' does't exist.")
     self.items.append(Item(name=name, stores=store_list, interval_weeks=interval))
 
   @autosave
   def delete_item(self, name: str):
-    if none(i.name == name for i in self.items):
+    if not any(i.name == name for i in self.items):
       raise ValueError(f"Item '{name}' does't exist.")
-      return
     self.items = [i for i in self.items if i.name != name]
 
   @autosave
   def add_item_stores(self, name: str, stores_to_add: List[str]):
     for i in self.items:
       if i.name == name:
-        i.stores.extend(stores_to_add)
+        for s in stores_to_add:
+          if not self.store_exists(s):
+            raise ValueError(f"Store '{s}' does't exist.")
+          elif s in i.stores:
+            raise ValueError(f"Store '{s}' already exists for item '{i.name}'.")
+          else:
+            i.stores.append(s)
         return
     raise ValueError(f"Item '{name}' does't exist.")
 
@@ -117,12 +125,19 @@ class Model:
   def remove_item_stores(self, name: str, stores_to_remove: List[str]):
     for i in self.items:
       if i.name == name:
-        i.stores = [s for s in i.stores if s not in stores_to_remove]
+        for s in stores_to_remove:
+          if s not in i.stores:
+            raise ValueError(f"Store '{s}' does't exist for item '{i.name}")
+          else:
+            i.stores.remove(s)
         return
     raise ValueError(f"Item '{name}' does't exist.")
 
   @autosave
   def update_item_stores(self, name: str, stores: List[str]):
+    for s in stores:
+      if not self.store_exists(s):
+        raise ValueError(f"Store '{s}' does't exist.")
     for i in self.items:
       if i.name == name:
         i.stores = stores
@@ -138,9 +153,18 @@ class Model:
     raise ValueError(f"Item '{name}' does't exist.")
 
   @autosave
-  def log_purchase(self, name: str, date: date):
-    for i in self.items:
-      if i.name in item_names:
-        i.purchased.append(date.strftime("%Y-%m-%d"))
-        return
-    raise ValueError(f"Item '{name}' does't exist.")
+  def log_purchase(self, item_names: List[str], purchase_date: date = None):
+    if purchase_date is None:
+      purchase_date = date.today()
+    purchase_date_str = purchase_date.strftime("%Y-%m-%d")
+    for name in item_names:
+      name_found: bool = False
+      for i in self.items:
+        if i.name == name:
+          name_found = True
+          # Dedup with the last purchase date
+          if i.purchased == [] or purchase_date_str != i.purchased[-1]:
+            i.purchased.append(purchase_date_str)
+          break
+      if not name_found:
+        raise ValueError(f"Item '{name}' does't exist.")
