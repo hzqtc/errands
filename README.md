@@ -18,21 +18,32 @@ uv sync
 
 ## 🚀 Usage
 
-Start the interactive shell:
+Add data by editing data.toml directly:
+
+```bash
+mv data.toml.example data.toml
+vim data.toml
+```
+
+Get the shopping list for next errand run:
+
+```bash
+echo "next run" | uv run errands/main.py
+
+- Costco
+  - Tofu
+  - Bok Choy
+```
+
+Or start the interactive shell:
 
 ```bash
 uv run errands/main.py
 ```
 
-Or add data by editing data.toml directly:
-
-```bash
-vim data.toml
-```
-
 ## 🧠 AI Assistance
 
-The `next_run` command uses an LLM to analyze purchase history and stocking intervals, then suggests what needs restocking in the next 2 weeks.
+The `next run` command uses an LLM to analyze purchase history and stocking intervals, then suggests what needs restocking in the next 2 weeks.
 
 ## 🧾 Commands
 
@@ -64,10 +75,10 @@ list stores
 list items
     Show all items, including intervals and purchase history.
 
-log_purcahse <item1> <item2> ...
+log purcahse <item1> <item2> ...
     Record a purchase event for one or more items (uses today’s date).
 
-next_run
+next run
     Suggest items to restock in the next 2 weeks (uses AI).
 
 help

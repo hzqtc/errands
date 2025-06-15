@@ -1,0 +1,34 @@
+[[stores]]
+name = "Costco"
+preferred = true
+
+[[stores]]
+name = "Whole Foods"
+preferred = false
+
+[[stores]]
+name = "Trader Joe's"
+preferred = false
+
+[[stores]]
+name = "Safeway"
+preferred = false
+
+[[items]]
+name = "Tofu"
+interval_weeks = 1
+stores = ["Costco"]
+purchased = ["2025-06-11"]
+
+[[items]]
+name = "Toilet Paper"
+interval_weeks = 12
+stores = ["Costco"]
+purchased = ["2025-06-11"]
+
+[[items]]
+name = "Kitchen Towel"
+interval_weeks = 8
+stores = ["Costco"]
+purchased = ["2025-06-11"]
+
