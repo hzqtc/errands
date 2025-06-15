@@ -38,11 +38,10 @@ def get_prompt(model: Model) -> str:
     f"{preferred_stores(model)}\n"
   )
 
-# Setting API KEY in `$LLM_GEMINI_KEY` or `llm keys set gemini`
-response = llm.get_model("gemini-2.0-flash").prompt(
-    get_prompt(Model()),
-    schema=llm.schema_dsl("store str, item str", multi=True)
-    )
-items = json.loads(response.text())["items"]
 
-print(items)
+def get_next_run_items() -> list:
+  # Setting API KEY in `$LLM_GEMINI_KEY` or `llm keys set gemini`
+  response = llm.get_model("gemini-2.0-flash").prompt(
+    get_prompt(Model()), schema=llm.schema_dsl("store str, item str", multi=True)
+  )
+  return json.loads(response.text())["items"]

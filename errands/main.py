@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
+from collections import defaultdict
 from model import Model
+from prompt import get_next_run_items
 from typing import List
 import re
 import readline
@@ -128,9 +130,24 @@ def execute_command(model: Model, line: str):
     else:
       raise ValueError("Usage: list stores|items")
 
-  elif cmd == "log_purchase":
-    check_condition(len(args) == 2, "Usage: log_purchase <item1,item2,...>")
-    model.log_purchase(parse_list(args[1]))
+  elif cmd == "log":
+    check_condition(
+      len(args) == 3 and args[1] == "purchase", "Usage: log purchase <item1,item2,...>"
+    )
+    model.log_purchase(parse_list(args[2]))
+
+  elif cmd == "next":
+    check_condition(len(args) == 2 and args[1] == "run", "Usage: next run")
+    items = get_next_run_items()
+    # Group by store
+    grouped = defaultdict(list)
+    for entry in items:
+      grouped[entry["store"]].append(entry["item"])
+    # Print as nested lists
+    for store, items in grouped.items():
+      print(f"- {store}")
+      for item in items:
+        print(f"  - {item}")
 
   else:
     raise ValueError("Unknown command")
