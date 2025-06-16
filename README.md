@@ -28,7 +28,7 @@ vim data.toml
 Get the shopping list for next errand run:
 
 ```bash
-echo "next run" | uv run errands/main.py
+echo "next" | uv run errands/main.py
 
 - Costco
   - Tofu
@@ -75,10 +75,10 @@ list stores
 list items
     Show all items, including intervals and purchase history.
 
-log purcahse <item1> <item2> ...
+log <item1> <item2> ...
     Record a purchase event for one or more items (uses today’s date).
 
-next run
+next
     Suggest items to restock in the next 2 weeks (uses AI).
 
 help

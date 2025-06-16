@@ -131,23 +131,28 @@ def execute_command(model: Model, line: str):
       raise ValueError("Usage: list stores|items")
 
   elif cmd == "log":
-    check_condition(
-      len(args) == 3 and args[1] == "purchase", "Usage: log purchase <item1,item2,...>"
-    )
-    model.log_purchase(parse_list(args[2]))
+    check_condition(len(args) == 2, "Usage: log <item1,item2,...>")
+    model.log_purchase(parse_list(args[1]))
 
   elif cmd == "next":
-    check_condition(len(args) == 2 and args[1] == "run", "Usage: next run")
     items = get_next_run_items()
     # Group by store
     grouped = defaultdict(list)
     for entry in items:
       grouped[entry["store"]].append(entry["item"])
     # Print as nested lists
-    for store, items in grouped.items():
-      print(f"- {store}")
-      for item in items:
-        print(f"  - {item}")
+    for store_name, item_names in grouped.items():
+      print(f"- {store_name}")
+      for item_name in item_names:
+        item = next((i for i in model.items if i.name == item_name), None)
+        if not item:
+          # Unexpected but LLMs may hallucinate
+          continue
+        if item.purchased:
+          last_purchase_date = item.purchased[-1]
+          print(f"  - {item.name} (last purchased {last_purchase_date})")
+        else:
+          print(f"  - {item.name}")
 
   else:
     raise ValueError("Unknown command")
