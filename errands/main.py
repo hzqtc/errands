@@ -2,12 +2,13 @@
 
 from collections import defaultdict
 from model import Model
-from prompt import get_next_run_items
+from next_run import get_next_run_items
 from typing import List
 import re
 import readline
 import shlex
 import sys
+import traceback
 
 
 def parse_bool(val: str) -> bool:
@@ -135,19 +136,10 @@ def execute_command(model: Model, line: str):
     model.log_purchase(parse_list(args[1]))
 
   elif cmd == "next":
-    items = get_next_run_items()
-    # Group by store
-    grouped = defaultdict(list)
-    for entry in items:
-      grouped[entry["store"]].append(entry["item"])
     # Print as nested lists
-    for store_name, item_names in grouped.items():
-      print(f"- {store_name}")
-      for item_name in item_names:
-        item = next((i for i in model.items if i.name == item_name), None)
-        if not item:
-          # Unexpected but LLMs may hallucinate
-          continue
+    for store, items in get_next_run_items(model).items():
+      print(f"- {store}")
+      for item in items:
         if item.purchased:
           last_purchase_date = item.purchased[-1]
           print(f"  - {item.name} (last purchased {last_purchase_date})")
@@ -207,6 +199,7 @@ def run_item_edit_prompt(model: Model, name: str):
         print("Invalid field. Only 'stores' and 'interval_weeks' are editable.")
     except Exception as e:
       print("Error:", e)
+      traceback.print_exc()
 
 
 def main():
@@ -225,6 +218,7 @@ def main():
         break
       except Exception as e:
         print("Error:", e)
+        traceback.print_exc()
         print("Type 'help' to see a list of commands.")
 
   else:
@@ -233,6 +227,7 @@ def main():
         execute_command(model, line.strip())
     except Exception as e:
       print("Error:", e)
+      traceback.print_exc()
 
 
 if __name__ == "__main__":
