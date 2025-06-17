@@ -40,8 +40,8 @@ def get_prompt(model: Model) -> str:
 
 
 def get_next_run_items() -> list:
-  # Setting API KEY in `$LLM_GEMINI_KEY` or `llm keys set gemini`
-  response = llm.get_model("gemini-2.0-flash").prompt(
+  # Use the default llm model
+  response = llm.get_model().prompt(
     get_prompt(Model()), schema=llm.schema_dsl("store str, item str", multi=True)
   )
   return json.loads(response.text())["items"]

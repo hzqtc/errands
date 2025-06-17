@@ -16,6 +16,16 @@ cd errands
 uv sync
 ```
 
+This project requires [`llm`](https://llm.datasette.io/en/stable/index.html) to be installed and configed (default model & api key).
+For example, set default mode to gemini:
+
+```bash
+uv tool install llm
+llm install llm-gemini
+llm keys set gemini
+llm models default gemini-2.0-flash
+```
+
 ## 🚀 Usage
 
 Add data by editing data.toml directly:
