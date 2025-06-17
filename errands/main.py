@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from collections import defaultdict
+from datetime import datetime
 from model import Model
 from next_run import get_next_run_items
 from typing import List
@@ -99,7 +100,7 @@ def execute_command(model: Model, line: str):
       model.edit_store(name, preferred)
     elif args[1] == "item":
       check_condition(
-        len(args) >= 3,
+        len(args) in (3, 5),
         "Usage: edit item <name> or edit item <name> <store1,store2,...> <interval>",
       )
       name = args[2]
@@ -132,8 +133,8 @@ def execute_command(model: Model, line: str):
       raise ValueError("Usage: list stores|items")
 
   elif cmd == "log":
-    check_condition(len(args) == 2, "Usage: log <item1,item2,...>")
-    model.log_purchase(parse_list(args[1]))
+    check_condition(len(args) in (2, 3), "Usage: log <item1,item2,...> <date>")
+    model.log_purchase(parse_list(args[1]), datetime.strptime(args[2], "%Y-%m-%d").date() if len(args) == 3 else None)
 
   elif cmd == "next":
     # Print as nested lists
